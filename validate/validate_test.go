@@ -7,7 +7,10 @@
 // the others. Run `go test -v ./validate/...` and read every FAIL line.
 package validate
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 const minCases = 8
 
@@ -24,8 +27,19 @@ var emailCases = []struct {
 	{"valid simple", "student@softserve.academy", true},
 	{"missing at sign", "student-softserve.academy", false},
 	{"empty string", "", false},
-
-	// TODO: add at least 5 more cases here.
+	{"missing local part", "@example.com", false},
+	{"missing domain", "student@", false},
+	{"whitespace", "student @example.com", false},
+	{"trailing domain dot", "student@example.com.", false},
+	{"consecutive local dots", "first..last@example.com", false},
+	{"unicode address", "élève@example.com", false},
+	{"domain label starts with hyphen", "student@-example.com", false},
+	{"single-label domain", "student@localhost", true},
+	{"multiple at signs", "a@@example.com", false},
+	{"maximum local part length", strings.Repeat("a", 64) + "@example.com", true},
+	{"local part exceeds maximum", strings.Repeat("a", 65) + "@example.com", false},
+	{"maximum domain label length", "student@" + strings.Repeat("a", 63), true},
+	{"domain label exceeds maximum", "student@" + strings.Repeat("a", 64), false},
 }
 
 func TestValidateEmail(t *testing.T) {
@@ -62,8 +76,17 @@ var phoneCases = []struct {
 	{"valid with plus", "+380501234567", true},
 	{"contains letters", "050-abc-4567", false},
 	{"empty string", "", false},
-
-	// TODO: add at least 5 more cases here.
+	{"missing plus", "380501234567", false},
+	{"too few digits", "+1234567", false},
+	{"minimum 8 digits", "+12345678", true},
+	{"maximum 15 digits", "+123456789012345", true},
+	{"more than 15 digits", "+1234567890123456", false},
+	{"leading zero country code", "+012345678", false},
+	{"embedded plus", "+1+2345678", false},
+	{"spaces are not allowed", "+380 50 123 4567", false},
+	{"hyphens are not allowed", "+380-50-123-4567", false},
+	{"parentheses are not allowed", "+1(202)5550123", false},
+	{"digits only after plus", "+38050.1234567", false},
 }
 
 func TestValidatePhone(t *testing.T) {
